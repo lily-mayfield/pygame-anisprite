@@ -228,6 +228,61 @@ class AnimatedSprite(pygame.sprite.Sprite):
         return largest_frame_size
 
     @classmethod
+    def from_sheet(cls, image_path, sprite_width, sprite_height, **kwargs):
+        """Load sprite animation from a .png sprite sheet.
+
+        Heavily borrowing code from PyAnimation:
+        https://github.com/estevaofon/pyanimation
+
+        Args:
+            image_path: sprite sheet png file
+            sprite_width, sprite_height: pixel size of each indivitual sprite in the sheet
+
+        Keyword Args:
+            xo (int):
+            yo (int):
+            duration (int): total time in milliseconds for sprite animation
+            mask_threshold (int): An optional keyword argument which
+                must be >0 to generate masks automatically per frame.
+                This value is used to note which parts are opaque and
+                thus collidable, and which values are not. Think of
+                RGBA, valid values are 0-254. See also: Frame().
+
+        Returns:
+            AnimatedSprite: --
+
+        """
+
+        duration = kwargs.get('duration', 1000)
+        # initial point of top left corner (offset to first sprite)
+        xo = kwargs.get('xo', 0)
+        yo = kwargs.get('yo', 0)
+        mask_threshold = kwargs.get('mask_threshold', 0)
+
+        sprite_sheet = (pygame.image.load(image_path).convert_alpha())
+        sheet_width, sheet_height = sprite_sheet.get_size()
+
+        frames = []
+        time_position = 0
+
+        nrows = int(sheet_height / sprite_height)
+        ncols = int(sheet_width / sprite_width)
+
+        frame_duration = duration / (nrows*ncols)
+
+        for r in range(nrows):
+            for c in range(ncols):
+                rect = pygame.Rect(xo+sprite_width*c, yo+sprite_height*r, sprite_width, sprite_height)
+                frame_sprite = sprite_sheet.subsurface(rect).copy()
+                frames.append(Frame(surface=frame_sprite,
+                              start_time=time_position,
+                              duration=frame_duration,
+                              mask_threshold=mask_threshold))
+                time_position += frame_duration
+
+        return AnimatedSprite(frames)
+
+    @classmethod
     def from_gif(cls, path_or_readable, mask_threshold=0):
         """The default is to create from gif bytes, but this can
         also be done from other methods...
