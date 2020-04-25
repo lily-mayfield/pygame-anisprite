@@ -20,7 +20,9 @@ from distutils.version import StrictVersion
 
 # Build the list of packages required according to Python version
 # Pygame isn't on Pypi.
-install_requires = ['Pillow>=2, <4']  # NOTE: why this specific Pillow range?
+#install_requires = ['Pillow>=2, <4']  # NOTE: why this specific Pillow range?
+#wheel installation fails when build with old Pillow, updating.
+install_requires = ['Pillow>=7']  # NOTE: why this specific Pillow range?
 
 # x.y.z
 python_version = StrictVersion('.'.join(str(n) for n in sys.version_info[:3]))
