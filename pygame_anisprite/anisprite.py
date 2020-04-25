@@ -166,6 +166,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
         super(AnimatedSprite, self).__init__()
         self.frames = frames
         self.total_duration = self.get_total_duration(self.frames)
+        # confirm my suspicion that sum in get_total_duration is not necessary
+        assert (self.total_duration == self.frames[-1].end_time)
         self.active_frame_index = 0
         self.active_frame = self.frames[self.active_frame_index]
 
@@ -364,11 +366,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         while (self.animation_position >
                self.frames[self.active_frame_index].end_time):
-
             self.active_frame_index += 1
 
         # NOTE: the fact that I'm using -1 here seems sloppy/hacky
-        self.image = self.frames[self.active_frame_index - 1].surface
+        # if active_frame_index is 0 (animation_postion <= end_time)
+        # image becomes the last frame (-1); this still works but is wrong
+        # self.image = self.frames[self.active_frame_index - 1].surface
+        assert (self.active_frame_index < len(self.frames))
+        self.image = self.frames[self.active_frame_index].surface
 
         self.rect.size = self.image.get_size()
         self.active_frame = self.frames[self.active_frame_index]
