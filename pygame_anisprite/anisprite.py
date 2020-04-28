@@ -57,9 +57,9 @@ class Frame(object):
             with mask_threshold >0.
         duration (integer): Milliseconds this frame lasts. How
             long this frame is displayed in corresponding animation.
-        start_time (integer): The animation position in milleseconds,
+        start_time (integer): The animation position in milliseconds,
             when this frame will start being displayed.
-        stop_time (integer): The animation position in milleseconds,
+        stop_time (integer): The animation position in milliseconds,
             when this frame will stop being displayed.
 
     See Also:
@@ -80,7 +80,7 @@ class Frame(object):
                 in order to render the animation properly we
                 need to know when each frame begins to be drawn,
                 while duration signifies when it ends.
-            duration (integer): Milleseconds this frame lasts. See:
+            duration (integer): Milliseconds this frame lasts. See:
                 start_time argument description.
             mask_threshold (int): Valid values 0-254. Alpha values
                 ABOVE this provided number are marked as "solid"/
@@ -130,7 +130,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
             animation at its current animation position. The
             AnimatedSprite.update() method sets this.
         animation_position (int): Animation position in
-            milliseconds; milleseconds elapsed in this
+            milliseconds; milliseconds elapsed in this
             animation. This is used for determining
             which frame to select. Set once per tick through
             the AnimatedSprite.update() method.
@@ -396,7 +396,6 @@ class AnimatedSprite(pygame.sprite.Sprite):
             int: The sum of all the frame's "duration" attribute.
 
         """
-
         return sum([frame.duration for frame in frames])
 
     @staticmethod
