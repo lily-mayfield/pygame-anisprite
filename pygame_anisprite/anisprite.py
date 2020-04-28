@@ -329,8 +329,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
                 pil_gif.seek(pil_gif.tell() + 1)
 
         except EOFError:
-
-            pass  # end of sequence
+            pil_gif.close()
 
         return AnimatedSprite(frames)
 
