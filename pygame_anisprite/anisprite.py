@@ -45,8 +45,7 @@ import pygame
 from PIL import Image
 
 
-# NOTE: could be a sprite...
-class Frame(object):
+class Frame(pygame.sprite.Sprite):
     """A frame of an AnimatedSprite animation.
 
     Attributes:
@@ -89,7 +88,9 @@ class Frame(object):
 
         """
 
-        self.surface = surface
+        self.image = surface
+        self.rect = surface.get_rect()
+
         self.duration = duration
         self.start_time = start_time
         self.end_time = start_time + duration
@@ -176,7 +177,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         # this gets updated depending on the frame/time
         # needs to be a surface.
-        self.image = self.frames[0].surface
+        self.image = self.frames[0].image
 
         # represents the animated sprite's position
         # on screen.
@@ -220,7 +221,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
             largest_x, largest_y = largest_frame_size
             largest_area = largest_x * largest_y
 
-            frame_size = frame.surface.get_size()
+            frame_size = frame.image.get_size()
             frame_x, frame_y = frame_size
             frame_area = frame_x * frame_y
 
@@ -356,6 +357,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         """
 
+        # TODO: if sprite belongs to multiple groups
+        # will it update the animation everytime group.update is called?
         self.animation_position += timedelta
 
         if self.animation_position >= self.total_duration:
@@ -372,7 +375,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         # image becomes the last frame (-1); this still works but is wrong
         # self.image = self.frames[self.active_frame_index - 1].surface
         assert (self.active_frame_index < len(self.frames))
-        self.image = self.frames[self.active_frame_index].surface
+        self.image = self.frames[self.active_frame_index].image
 
         self.rect.size = self.image.get_size()
         self.active_frame = self.frames[self.active_frame_index]
