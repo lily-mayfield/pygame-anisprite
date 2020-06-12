@@ -45,8 +45,62 @@ import pygame
 from PIL import Image
 
 
-# NOTE: could be a sprite...
-class Frame(object):
+def frames_from_sheet(image_path, sprite_width, sprite_height, **kwargs):
+    """Return list of sprite animation frames loaded from a .png sheet.
+
+    Heavily borrowing code from PyAnimation:
+    https://github.com/estevaofon/pyanimation
+
+    Args:
+        image_path: sprite sheet png file
+        sprite_width, sprite_height: pixel size of each indivitual sprite in the sheet
+
+    Keyword Args:
+        xo (int):
+        yo (int):
+        duration (int): total time in milliseconds for sprite animation
+        mask_threshold (int): An optional keyword argument which
+            must be >0 to generate masks automatically per frame.
+            This value is used to note which parts are opaque and
+            thus collidable, and which values are not. Think of
+            RGBA, valid values are 0-254. See also: Frame().
+
+    Returns:
+        list of Frame objects
+
+    """
+
+    duration = kwargs.get('duration', 1000)
+    # initial point of top left corner (offset to first sprite)
+    xo = kwargs.get('xo', 0)
+    yo = kwargs.get('yo', 0)
+    mask_threshold = kwargs.get('mask_threshold', 0)
+
+    sprite_sheet = (pygame.image.load(image_path).convert_alpha())
+    sheet_width, sheet_height = sprite_sheet.get_size()
+
+    frames = []
+    time_position = 0
+
+    nrows = int(sheet_height / sprite_height)
+    ncols = int(sheet_width / sprite_width)
+
+    frame_duration = duration / (nrows * ncols)
+
+    for r in range(nrows):
+        for c in range(ncols):
+            rect = pygame.Rect(xo + sprite_width * c, yo + sprite_height * r, sprite_width, sprite_height)
+            frame_sprite = sprite_sheet.subsurface(rect).copy()
+            frames.append(Frame(surface=frame_sprite,
+                                start_time=time_position,
+                                duration=frame_duration,
+                                mask_threshold=mask_threshold))
+            time_position += frame_duration
+
+    return frames
+
+
+class Frame(pygame.sprite.Sprite):
     """A frame of an AnimatedSprite animation.
 
     Attributes:
@@ -57,9 +111,9 @@ class Frame(object):
             with mask_threshold >0.
         duration (integer): Milliseconds this frame lasts. How
             long this frame is displayed in corresponding animation.
-        start_time (integer): The animation position in milleseconds,
+        start_time (integer): The animation position in milliseconds,
             when this frame will start being displayed.
-        stop_time (integer): The animation position in milleseconds,
+        stop_time (integer): The animation position in milliseconds,
             when this frame will stop being displayed.
 
     See Also:
@@ -80,7 +134,7 @@ class Frame(object):
                 in order to render the animation properly we
                 need to know when each frame begins to be drawn,
                 while duration signifies when it ends.
-            duration (integer): Milleseconds this frame lasts. See:
+            duration (integer): Milliseconds this frame lasts. See:
                 start_time argument description.
             mask_threshold (int): Valid values 0-254. Alpha values
                 ABOVE this provided number are marked as "solid"/
@@ -89,7 +143,9 @@ class Frame(object):
 
         """
 
-        self.surface = surface
+        self.image = surface
+        self.rect = surface.get_rect()
+
         self.duration = duration
         self.start_time = start_time
         self.end_time = start_time + duration
@@ -130,7 +186,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
             animation at its current animation position. The
             AnimatedSprite.update() method sets this.
         animation_position (int): Animation position in
-            milliseconds; milleseconds elapsed in this
+            milliseconds; milliseconds elapsed in this
             animation. This is used for determining
             which frame to select. Set once per tick through
             the AnimatedSprite.update() method.
@@ -166,6 +222,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
         super(AnimatedSprite, self).__init__()
         self.frames = frames
         self.total_duration = self.get_total_duration(self.frames)
+        # confirm my suspicion that sum in get_total_duration is not necessary
+        assert (self.total_duration == self.frames[-1].end_time)
         self.active_frame_index = 0
         self.active_frame = self.frames[self.active_frame_index]
 
@@ -174,7 +232,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         # this gets updated depending on the frame/time
         # needs to be a surface.
-        self.image = self.frames[0].surface
+        self.image = self.frames[0].image
 
         # represents the animated sprite's position
         # on screen.
@@ -218,7 +276,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
             largest_x, largest_y = largest_frame_size
             largest_area = largest_x * largest_y
 
-            frame_size = frame.surface.get_size()
+            frame_size = frame.image.get_size()
             frame_x, frame_y = frame_size
             frame_area = frame_x * frame_y
 
@@ -226,6 +284,33 @@ class AnimatedSprite(pygame.sprite.Sprite):
                 largest_frame_size = (frame_size)
 
         return largest_frame_size
+
+    @classmethod
+    def from_sheet(cls, image_path, sprite_width, sprite_height, **kwargs):
+        """Load sprite animation from a .png sprite sheet.
+
+        Heavily borrowing code from PyAnimation:
+        https://github.com/estevaofon/pyanimation
+
+        Args:
+            image_path: sprite sheet png file
+            sprite_width, sprite_height: pixel size of each indivitual sprite in the sheet
+
+        Keyword Args:
+            xo (int):
+            yo (int):
+            duration (int): total time in milliseconds for sprite animation
+            mask_threshold (int): An optional keyword argument which
+                must be >0 to generate masks automatically per frame.
+                This value is used to note which parts are opaque and
+                thus collidable, and which values are not. Think of
+                RGBA, valid values are 0-254. See also: Frame().
+
+        Returns:
+            AnimatedSprite: --
+
+        """
+        return AnimatedSprite(frames_from_sheet(image_path, sprite_width, sprite_height, **kwargs))
 
     @classmethod
     def from_gif(cls, path_or_readable, mask_threshold=0):
@@ -272,8 +357,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
                 pil_gif.seek(pil_gif.tell() + 1)
 
         except EOFError:
-
-            pass  # end of sequence
+            pil_gif.close()
 
         return AnimatedSprite(frames)
 
@@ -300,6 +384,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         """
 
+        # TODO: if sprite belongs to multiple groups
+        # will it update the animation everytime group.update is called?
         self.animation_position += timedelta
 
         if self.animation_position >= self.total_duration:
@@ -309,11 +395,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         while (self.animation_position >
                self.frames[self.active_frame_index].end_time):
-
             self.active_frame_index += 1
 
         # NOTE: the fact that I'm using -1 here seems sloppy/hacky
-        self.image = self.frames[self.active_frame_index - 1].surface
+        # if active_frame_index is 0 (animation_postion <= end_time)
+        # image becomes the last frame (-1); this still works but is wrong
+        # self.image = self.frames[self.active_frame_index - 1].surface
+        assert (self.active_frame_index < len(self.frames))
+        self.image = self.frames[self.active_frame_index].image
 
         self.rect.size = self.image.get_size()
         self.active_frame = self.frames[self.active_frame_index]
@@ -336,7 +425,6 @@ class AnimatedSprite(pygame.sprite.Sprite):
             int: The sum of all the frame's "duration" attribute.
 
         """
-
         return sum([frame.duration for frame in frames])
 
     @staticmethod
